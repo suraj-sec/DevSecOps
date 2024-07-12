@@ -13,4 +13,9 @@ sed -i '/^$/d' endpoints.txt
 
 git clone https://github.com/projectdiscovery/fuzzing-templates.git
 nuclei -list endpoints.txt -t fuzzing-templates [-verbose]
+
+nuclei -w django-workflow.yaml -validate
+
+time nuclei -u https://prod-lq84iw0v.lab.practical-devsecops.training/ -w django-workflow.yaml
+time nuclei -u https://prod-lq84iw0v.lab.practical-devsecops.training/ -t /root/nuclei-templates/
 ```
