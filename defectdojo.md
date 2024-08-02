@@ -126,8 +126,94 @@ docker run --user $(id -u):$(id -g) -w /zap -v $(pwd):/zap/wrk:rw --rm softwares
 python3 upload-results.py --host dojo-lq84iw0v.lab.practical-devsecops.training --api_key $API_KEY --engagement_id 1 --product_id 1 --lead_id 1 --environment "Production" --result_file trufflehog-output.json --scanner "Trufflehog Scan"
 
 python3 upload-results.py --host dojo-lq84iw0v.lab.practical-devsecops.training \
->     --api_key $API_KEY --engagement_id 1 --product_id 1 \
->     --lead_id 1 --environment "Production" \
->     --result_file /webapp/zap-output.xml \
->     --scanner "ZAP Scan
+     --api_key $API_KEY --engagement_id 1 --product_id 1 \
+     --lead_id 1 --environment "Production" \
+     --result_file zap-output.xml \
+     --scanner "ZAP Scan"
 ```
+
+### gitlab pipeline
+
+add DOJO_HOST and DOJO_API_TOKEN as CI/CD variable
+api-key endpoint - https://dojo.com/api/key-v2
+
+```
+image: docker:20.10  # To run all jobs in this pipeline, use the latest docker image
+
+services:
+  - docker:dind       # To run all jobs in this pipeline, use a docker image that contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
+
+stages:
+  - build
+  - test
+  - release
+  - preprod
+  - integration
+  - prod
+
+build:
+  stage: build
+  image: python:3.6
+  before_script:
+   - pip3 install --upgrade virtualenv
+  script:
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
+
+test:
+  stage: test
+  image: python:3.6
+  before_script:
+   - pip3 install --upgrade virtualenv
+  script:
+   - virtualenv env
+   - source env/bin/activate
+   - pip install -r requirements.txt
+   - python manage.py test taskManager
+
+sast:
+  stage: build
+  before_script:
+    - apk add py-pip py-requests
+  script:
+    - docker pull hysnsec/bandit  # Download bandit docker container
+    - docker run --user $(id -u):$(id -g) -v $(pwd):/src --rm hysnsec/bandit -r /src -f json -o /src/bandit-output.json
+  after_script:
+    - python3 upload-results.py --host $DOJO_HOST --api_key $DOJO_API_TOKEN --engagement_id 1 --product_id 1 --lead_id 1 --environment "Production" --result_file bandit-output.json --scanner "Bandit Scan"
+  artifacts:
+    paths: [bandit-output.json]
+    when: always
+  allow_failure: true
+
+
+integration:
+  stage: integration
+  script:
+    - echo "This is an integration step"
+
+prod:
+  stage: prod
+  script:
+    - echo "This is a deploy step."
+
+dast-zap:
+  stage: integration
+  before_script:
+    - apk add py-pip py-requests
+    - docker pull softwaresecurityproject/zap-stable:2.13.0
+  script:
+    - docker run --user $(id -u):$(id -g) -w /zap -v $(pwd):/zap/wrk:rw --rm softwaresecurityproject/zap-stable:2.13.0 zap-baseline.py -t https://prod-lq84iw0v.lab.practical-devsecops.training -d -x zap-output.xml
+  after_script:
+    - python3 upload-results.py --host $DOJO_HOST --api_key $DOJO_API_TOKEN --engagement_id 1 --product_id 1 --lead_id 1 --environment "Production" --result_file zap-output.xml --scanner "ZAP Scan"
+  artifacts:
+    paths: [zap-output.xml]
+    when: always
+    expire_in: 1 day
+  allow_failure: true
+```
+
+
+
+
