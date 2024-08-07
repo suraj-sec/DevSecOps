@@ -7,6 +7,7 @@ Software Component Analysis (SCA)
 ProTip: Please remember to run the tool locally before embedding it into the CI/CD pipeline.
 
 Before running the scan, let’s clone our source code from the GitLab server.
+
 ```
 git clone http://gitlab-ce-lq84iw0v.lab.practical-devsecops.training/root/django-nv.git webapp
 cd webapp
@@ -15,6 +16,7 @@ cd webapp
 Lets run the command locally on the DevSecOps Box to test if all commands are working properly.
 
 For front-end:
+
 ```
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
@@ -24,28 +26,36 @@ apt update
 ```
 
 `apt install nodejs -y`
+
 `npm install -g retire # Install retirejs npm package`
+
 `retire --outputformat json --outputpath retirejs-report.json --severity high`
 
 
 For backend:
+
 `docker run --rm -v $(pwd):/src hysnsec/safety check -r requirements.txt --json > oast-results.json`
 
 Static Application Security Testing (SAST)
 For secrets scanning:
+
 `docker run --rm -v $(pwd):/src hysnsec/trufflehog filesystem /src --json | tee trufflehog-output.json`
 
 For static analysis:
+
 `docker run --user $(id -u):$(id -g) --rm -v $(pwd):/src hysnsec/bandit -r /src -f json -o /src/bandit-output.json`
 
 Dynamic Application Security Testing (DAST)
 For SSL Scan:
+
 `docker run --rm -v $(pwd):/tmp hysnsec/sslyze prod-lq84iw0v.lab.practical-devsecops.training:443 --json_out /tmp/sslyze-output.json`
 
 For Nmap:
+
 `docker run --rm -v $(pwd):/tmp hysnsec/nmap prod-lq84iw0v -oX /tmp/nmap-output.xml`
 
 For Dynamic analysis:
+
 `docker run --user $(id -u):$(id -g) -w /zap -v $(pwd):/zap/wrk:rw --rm softwaresecurityproject/zap-stable:2.13.0 zap-baseline.py -t https://prod-lq84iw0v.lab.practical-devsecops.training -J zap-output.json`
 
 Task 2
