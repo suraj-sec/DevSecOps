@@ -1,0 +1,14 @@
+composer-job:       
+  stage: build
+  image: php:7.4
+  script:
+    - apt update && apt install -y git
+    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    - php composer-setup.php
+    - mv composer.phar /usr/local/bin/composer
+    - composer install
+    - composer audit --format json | tee composer-audit.json
+  artifacts:
+    paths: [composer-audit.json]
+    when: always
+  allow_failure: true

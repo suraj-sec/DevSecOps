@@ -1,0 +1,46 @@
+image: docker:20.10
+
+services:
+  - docker:dind
+
+stages:
+  - build
+  - test
+  - release
+  - preprod
+  - integration
+  - prod
+
+trivy:
+  stage: test
+  script:
+    - docker run --rm -v $(pwd):/src hysnsec/trivy fs . --exit-code 1 -f json -o trivy-report.json
+  artifacts:
+    paths: [trivy-report.json]
+    when: always # What is this for?
+    expire_in: one week
+  allow_failure: true   #<--- allow the build to fail but don't mark it as such
+
+test:
+  stage: test
+  image: python:3.6
+  before_script:
+   - pip3 install --upgrade virtualenv
+  script:
+   - virtualenv env
+   - source env/bin/activate
+   - pip install -r requirements.txt
+   - python manage.py test taskManager
+
+integration:
+  stage: integration
+  script:
+    - echo "This is an integration step"
+    - exit 1
+  allow_failure: true # Even if the job fails, continue to the next stages
+
+prod:
+  stage: prod
+  script:
+    - echo "This is a deploy step."
+  when: manual # Continuous Delivery

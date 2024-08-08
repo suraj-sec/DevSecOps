@@ -1,0 +1,27 @@
+image: docker:20.10
+
+services:
+  - docker:dind
+
+stages:
+  - build
+
+.npm:
+  stage: build
+  image:
+    name: docker.io/andrcuns/dependabot-gitlab:0.11.0
+    entrypoint: [""]
+  variables:
+    GIT_STRATEGY: none
+    PACKAGE_MANAGER: npm
+    RAILS_ENV: production
+    SETTINGS__GITLAB_URL: $CI_SERVER_URL
+    SETTINGS__STANDALONE: "true"
+  before_script:
+    - cd /home/dependabot/app
+  script:
+    - bundle exec rake "dependabot:update[$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME,$PACKAGE_MANAGER,/]"
+
+dependabot:
+  extends: .npm
+  when: manual
