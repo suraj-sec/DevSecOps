@@ -1,0 +1,12 @@
+  zap_baseline:
+    machine: true
+    steps:
+      - checkout
+
+      - run: |
+          docker pull softwaresecurityproject/zap-stable:2.13.0
+          docker run --user root --rm -v $(pwd):/zap/wrk:rw -w /zap softwaresecurityproject/zap-stable:2.13.0 zap-baseline.py -t ${PROD_URL} -J zap-output.json || true
+
+      - store_artifacts:
+          path: zap-output.json
+          destination: zap-artifact

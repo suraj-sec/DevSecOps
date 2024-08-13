@@ -1,0 +1,15 @@
+        stage("prod") {
+            steps {
+                input "Deploy to production?"
+                sshagent(['ssh-prod']) {
+                    sh """
+                    ssh -o StrictHostKeyChecking=no root@prod-s7un9xry '
+                    docker login -u root -p pdso-training $registryUrl
+                    docker rm -f django.nv
+                    docker pull $registryUrl/root/django-nv:$BUILD_NUMBER
+                    docker run -d --name django.nv -p 8000:8000 $registryUrl/root/django-nv:$BUILD_NUMBER
+                    '
+                    """
+                }
+            }
+        }

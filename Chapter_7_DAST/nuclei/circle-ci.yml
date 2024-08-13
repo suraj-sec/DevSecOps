@@ -1,0 +1,11 @@
+  nuclei:
+    machine: true
+    steps:
+      - checkout
+
+      - run: |
+          docker run --user $(id -u):$(id -g) -w /nuclei -v $(pwd):/nuclei:rw --rm projectdiscovery/nuclei:v2.9.6 -u https://prod-s7un9xry.lab.practical-devsecops.training -j -o nuclei-output.json
+
+      - store_artifacts:
+          path: nuclei-output.json
+          destination: nuclei-artifact
